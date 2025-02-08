@@ -1,35 +1,40 @@
 import json
 
 def main():
-    test()
+    #test()
     
     board = get_board_from_file()
     new_board = play_game(board)
     quit_game(new_board)
 
 
-    
 # File management
 
 def quit_game(board: list):
     if input("Would you like to save your board to a file? (y/n) \n> ").lower() == "y":
         filename = prompt_filename()
-
+        #"D:/dev/sudoku-player/"
+    save_board_to_file(filename, board)
 
 def get_board_from_file() -> list:
     valid = False
+    data = []
     while not valid:
         filename = prompt_filename()
         try:
             with open(filename, 'r') as file:
                 data = json.load(file)
-                return data['board']
-        except:
+            valid = True
+        except Exception as e:
             print("Invalid file.")
+            print(e)
+    return data['board']
 
 
 def prompt_filename() -> str:
     filename = input("What is the filename? \n> ")
+    return filename
+
 
 def save_board_to_file(filename: str, board) -> None:
     data = {'board': board}
@@ -42,15 +47,15 @@ def save_board_to_file(filename: str, board) -> None:
 def play_game(board: list) -> list:
     keep_playing = True
     while keep_playing:
+        print_board(board)
         move = prompt_move(board)
         if move[1] == -99: # Quit code
             keep_playing = False
         else:
             board = update_board(move, board)
-            print_board(board)
     
     return board
-        
+
 
 def prompt_move(board: list) -> list:
     """ Returns [(x, y), num] 
@@ -88,14 +93,14 @@ def prompt_move(board: list) -> list:
 def update_board(move: list, board: list) -> list:
     space = move[0]
     num = move[1]
-    board[space[0]][space[1]] = num
+    board[space[1]][space[0]] = num
     return board
 
 
 def print_board(board: list) -> None:
     """Prints the board.
     The following code was a collaborative effort between a human programmer and ChatGPT."""
-    print("  A B C D E F G H I")
+    print("  A B C   D E F   G H I")
     for i in range(9):
         row = board[i]
         # Print row number (1-9) followed by the row contents
@@ -110,7 +115,6 @@ def print_board(board: list) -> None:
         print()
         if i == 2 or i == 5:
             print("   -----+-----+-----")
-
 
 
 
