@@ -14,7 +14,7 @@ def quit_game(board: list):
     if input("Would you like to save your board to a file? (y/n) \n> ").lower() == "y":
         filename = prompt_filename()
         #"D:/dev/sudoku-player/"
-    save_board_to_file(filename, board)
+        save_board_to_file(filename, board)
 
 def get_board_from_file() -> list:
     valid = False
@@ -25,9 +25,9 @@ def get_board_from_file() -> list:
             with open(filename, 'r') as file:
                 data = json.load(file)
             valid = True
-        except Exception as e:
+        except Exception: # as e:
             print("Invalid file.")
-            print(e)
+            # print(e)
     return data['board']
 
 
@@ -45,6 +45,7 @@ def save_board_to_file(filename: str, board) -> None:
 # Game Management
 
 def play_game(board: list) -> list:
+    """Handles main game loop."""
     keep_playing = True
     while keep_playing:
         print_board(board)
@@ -69,7 +70,7 @@ def prompt_move(board: list) -> list:
     
     while not valid:
         parse_invalid = (-1, -1)
-        square = input("Make a move: ")
+        square = input("Choose a space:\n> ")
         if square == "q":
             return [(-99, -99), -99] #Quit code
         
@@ -77,8 +78,8 @@ def prompt_move(board: list) -> list:
         
         # Checks if input can be translated to a move. Is_move_valid() verifies legality of move.
         if parsed != parse_invalid:
-            num = input("What number in that space? ")
-            if len(num) == 1 and num.isdigit() and int(num) > 0:
+            num = input("What number in that space?\n> ")
+            if len(num) == 1 and num.isdigit() and int(num) > 0: #TODO modularize this
                 move = [parsed, int(num)]
                 valid = is_move_valid(move, board)
             else:
@@ -129,7 +130,7 @@ def parse_input(move: str) -> tuple:
 
     if len(move) != 2:
         return invalid
-    try: #TODO replace this
+    try: #TODO replace try with typecheck
         x = int(ord(move[0].lower())) - int(ord("a"))
         y = int(move[1]) - 1
         move = (x, y)
@@ -141,8 +142,6 @@ def parse_input(move: str) -> tuple:
         return move
     else:
         return invalid
-
-
 
 
 
@@ -167,6 +166,7 @@ def test():
     print(parse_input("11"))
     print("\nparse BB")
     print(parse_input("BB"))
+
 
 if __name__ == "__main__":
     main()
