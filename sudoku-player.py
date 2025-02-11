@@ -1,3 +1,4 @@
+
 import json
 
 def main():
@@ -81,7 +82,9 @@ def prompt_move(board: list) -> list:
             num = input("What number in that space?\n> ")
             if len(num) == 1 and num.isdigit() and int(num) > 0: #TODO modularize this
                 move = [parsed, int(num)]
-                valid = is_move_valid(move, board)
+                response = is_move_valid(move, board)
+                valid = response[0]
+                print(response[1])
             else:
                 print("Invalid number, try again.")
         
@@ -101,11 +104,11 @@ def update_board(move: list, board: list) -> list:
 def print_board(board: list) -> None:
     """Prints the board.
     The following code was a collaborative effort between a human programmer and ChatGPT."""
-    print("  A B C   D E F   G H I")
+    print("    A B C   D E F   G H I")
     for i in range(9):
         row = board[i]
         # Print row number (1-9) followed by the row contents
-        print(f"{i+1} ", end="") 
+        print(f"{i+1}   ", end="") 
         for j in range(9):
             # Print the number with a space
             print(row[j], end=" ")
@@ -115,14 +118,96 @@ def print_board(board: list) -> None:
         # Add a line break after each row, and print separators every 3 rows
         print()
         if i == 2 or i == 5:
-            print("   -----+-----+-----")
+            print("     -----+-----+-----")
 
 
 
 # Input Validation
 
 def is_move_valid(move, board):
-    return True # TODO
+        #  Step 1: Parse the user input to get row, col 
+    (row, col) = move[0]
+    num = move[1] 
+    
+    #  Step 2: Check if the input is invalid (invalid row, col) 
+    #if row == 0 and col == 0: 
+        #return (False, "Invalid input. Please enter a valid board position (e.g., 'A1', 'C5').") 
+ 
+    #  Step 3: Check if the cell is already occupied 
+    if board[row][col] != 0: 
+        return (False, "This space is already occupied. Choose an empty space.") 
+ 
+    #  Step 4: Check if the number is valid in the current row 
+    if not check_row(row, num, board): 
+        return (False, "The number already exists in this row. Try another number.") 
+ 
+    #  Step 5: Check if the number is valid in the current column 
+    if not check_col(col, num, board): 
+        return (False, "The number already exists in this column. Try another number.") 
+
+    #  Step 6: Check if the number is valid in the 3x3 sub-box 
+    if not check_box(row, col, num, board): 
+        return (False, "The number already exists in this 3x3 sub-box. Try another number.") 
+ 
+    #  Step 7: Check if the number is valid in the square the user is trying to edit 
+    if not check_square(row, col, board): 
+        return (False, "The move is not valid for this square. Try again.") 
+ 
+    #  Step 8: If all checks pass, return success message 
+    return (True, "Move is valid. Good job!") 
+
+
+def check_square(row, col, board): 
+    #  Check if the cell is already occupied 
+    if board[row][col] != 0: 
+        return False  #  The space is occupied by another number 
+ 
+    #  If the cell is empty, return True 
+    return True
+ 
+ 
+def check_row(row, num, board): 
+    # Loop through all columns in the given row 
+    for col in range(0, 9): 
+        #  If the number already exists in the row, return False 
+        if board[row][col] == num: 
+            return False 
+ 
+    #  If no conflicts, return True 
+    return True 
+ 
+ 
+def check_col(col, num, board): 
+    #  Loop through all rows in the given column 
+    for row in range(0, 9): 
+        #  If the number already exists in the column, return False 
+        if board[row][col] == num: 
+            return False 
+ 
+    #  If no conflicts, return True 
+    return True 
+ 
+ 
+ 
+def check_box(row, col, num, board): 
+    #  Calculate the top-left corner of the 3x3 sub-box 
+    start_row = (row // 3) * 3 
+    start_col = (col // 3) * 3 
+ 
+    #  Loop through the 3x3 sub-box 
+    for i in range(start_row , start_row + 3): 
+        for j in range(start_col, start_col + 3): 
+            #  If the number already exists in this 3x3 box, return False 
+            if board[i][j] == num: 
+                return False 
+ 
+    #  If no conflicts, return True 
+    return True 
+
+
+
+
+
 
 def parse_input(move: str) -> tuple:
 	# Returns -1.-1 if  move is invalid
@@ -142,6 +227,12 @@ def parse_input(move: str) -> tuple:
         return move
     else:
         return invalid
+
+
+
+
+
+
 
 
 
