@@ -2,7 +2,7 @@
 import json
 
 def main():
-    #test()
+    test()
     
     board = get_board_from_file()
     new_board = play_game(board)
@@ -80,7 +80,7 @@ def prompt_move(board: list) -> list:
         # Checks if input can be translated to a move. Is_move_valid() verifies legality of move.
         if parsed != parse_invalid:
             num = input("What number in that space?\n> ")
-            if len(num) == 1 and num.isdigit() and int(num) > 0: #TODO modularize this
+            if len(num) == 1 and num.isdigit() and int(num) >= 0: #TODO modularize this
                 move = [parsed, int(num)]
                 response = is_move_valid(move, board)
                 valid = response[0]
@@ -129,9 +129,9 @@ def is_move_valid(move, board):
     (row, col) = move[0]
     num = move[1] 
     
-    #  Step 2: Check if the input is invalid (invalid row, col) 
-    #if row == 0 and col == 0: 
-        #return (False, "Invalid input. Please enter a valid board position (e.g., 'A1', 'C5').") 
+    # Step 2: If number is 0, alow user to "clear" the space.
+    if num == 0:
+        return (True, "Clearing space.")
  
     #  Step 3: Check if the cell is already occupied 
     if board[row][col] != 0: 
@@ -212,16 +212,25 @@ def check_box(row, col, num, board):
 def parse_input(move: str) -> tuple:
 	# Returns -1.-1 if  move is invalid
     invalid = (-1, -1)
+    valid_letters = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'}
 
     if len(move) != 2:
         return invalid
-    try: #TODO replace try with typecheck
-        x = int(ord(move[0].lower())) - int(ord("a"))
-        y = int(move[1]) - 1
-        move = (x, y)
-    except Exception as e:
-        print(e)
+    
+    if move[0].isdigit() and move[1].lower() in valid_letters:
+        letter = int(ord(move[1].lower())) - int(ord("a"))
+        number = int(move[0]) - 1
+
+    elif move[1].isdigit() and move[0].lower() in valid_letters:
+        letter = int(ord(move[0].lower())) - int(ord("a"))
+        number = int(move[1]) - 1
+
+    else:
+        #print(move[1])
+        #print(move[1].isdigit())
         return invalid
+
+    move = (number, letter)
 
     if move[0] > -1 and move[0] < 9 and move[1] > -1 and move[1] < 9:
         return move
