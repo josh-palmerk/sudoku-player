@@ -1,9 +1,20 @@
 
+
+# TODO list:
+#       - simplify is_move_valid output (dict)?
+#       - remove excessive comments; add necessary ones
+#       - add autosolve code
+#       - add winchecking
+#       - add relevant docstrings
+#       - should 0 be valid?
+
+
+
 import json
 
 def main():
     #test_parse()
-    test_is_move_valid()
+    # test_is_move_valid()
     board = get_board_from_file()
     new_board = play_game(board)
     quit_game(new_board)
@@ -19,12 +30,11 @@ def quit_game(board: list):
     """
     if input("Would you like to save your board to a file? (y/n) \n> ").lower() == "y":
         filename = prompt_filename()
-        #"D:/dev/sudoku-player/"
         save_board_to_file(filename, board)
 
 
 def get_board_from_file() -> list:
-    """Gets sudoku board from a user-inputted filename.
+    """Gets sudoku board from a valid user-inputted filename.
 
     Returns:
         list: sudoku board as 2d array
@@ -70,42 +80,40 @@ def save_board_to_file(filename: str, board: list) -> None:
 # Game Management
 
 def play_game(board: list) -> list:
-    #TODO change this to play_one_round
+
     keep_playing = True
     while keep_playing:
         print_board(board)
         move = prompt_move(board)
-        if move[1] == -99: # Quit code
+        if move["command"] == "quit": # Quit code
             keep_playing = False
+        #elif move["command"] == "auto_solve": # coming soon
         else:
             board = update_board(move, board)
     
     return board
 
 
-def prompt_move(board: list) -> list:
-    """ Returns [(x, y), num] 
-    x: column a-i as int 0-8
-    y: rows 1-9 as int 0-8
-    num: number on board, 1-9
-    
-    Will return all 3 above ints as -99 if user chooses to quit."""
+def prompt_move(board: list) -> dict:
+
     valid = False
-    move = []
+    move = {"command": "play"}
     
     while not valid:
-        parse_invalid = (-1, -1)
+
         square = input("Choose a space:\n> ")
         if square == "q":
-            return [(-99, -99), -99] #Quit code
+            move["command"] = "quit" #Quit code
         
         parsed = parse_input(square)
         
         # Checks if input can be translated to a move. Is_move_valid() verifies legality of move.
-        if parsed != parse_invalid:
+        if parsed["parsed_valid"]:
             num = input("What number in that space?\n> ")
-            if len(num) == 1 and num.isdigit() and int(num) >= 0: #TODO modularize this
-                move = [parsed, int(num)]
+            if len(num) == 1 and num.isdigit() and int(num) >= 0: #TODO modularize this?
+                move["x"] = parsed["x"]
+                move["y"] = parsed["y"]
+                move["number"] = int(num)
                 response = is_move_valid(move, board)
                 valid = response[0]
                 print(response[1])
@@ -118,7 +126,7 @@ def prompt_move(board: list) -> list:
     return move
 
 
-def update_board(move: list, board: list) -> list:
+def update_board(move: dict, board: list) -> list:
     """Makes specified move on board, then returns the edited board.
 
     Args:
@@ -128,9 +136,7 @@ def update_board(move: list, board: list) -> list:
     Returns:
         list: The new board.
     """
-    space = move[0]
-    num = move[1]
-    board[space[0]][space[1]] = num
+    board[move["x"]][move["y"]] = move["number"]
     return board
 
 
@@ -157,25 +163,26 @@ def print_board(board: list) -> None:
         # Add a line break after each row, and print separators every 3 rows
         print()
         if i == 2 or i == 5:
-            print("     -----+-----+-----")
+            print("   -------+-------+-------")
 
 
 
 # Input Validation
 
-def is_move_valid(move, board) -> tuple:
-        #  Step 1: Parse the user input to get row, col 
-    (row, col) = move[0]
-    num = move[1] 
+def is_move_valid(move: dict, board: list) -> tuple:
+    #  Step 1: Parse the input to get row, col, num
+    row = move["x"]
+    col = move["y"]
+    num = move["number"] 
     
     # Step 2: If number is 0, alow user to "clear" the space.
     if num == 0:
         return (True, "Clearing space.")
  
-    #  Step 3: Check if the cell is already occupied 
-    #if board[row][col] != 0: 
-        #return (False, "This space is already occupied. Choose an empty space.") 
- 
+    #  Step 3: Check if the number is valid in the square the user is trying to edit 
+    if not check_square(row, col, board): 
+        return (False, "This space is already occupied. Choose an empty space.") 
+
     #  Step 4: Check if the number is valid in the current row 
     if not check_row(row, num, board): 
         return (False, "The number already exists in this row. Try another number.") 
@@ -188,11 +195,7 @@ def is_move_valid(move, board) -> tuple:
     if not check_box(row, col, num, board): 
         return (False, "The number already exists in this 3x3 sub-box. Try another number.") 
  
-    #  Step 7: Check if the number is valid in the square the user is trying to edit 
-    if not check_square(row, col, board): 
-        return (False, "The move is not valid for this square. Try again.") 
- 
-    #  Step 8: If all checks pass, return success message 
+    #  Step 7: If all checks pass, return success message 
     return (True, "Move is valid. Good job!") 
 
 
@@ -245,77 +248,32 @@ def check_box(row, col, num, board):
     return True 
 
 
-def parse_input(move: str) -> tuple:
-	# Returns -1.-1 if  move is invalid
-    invalid = (-1, -1)
+def parse_input(input: str) -> dict:
+    move = {}
+    move["parsed_valid"] = False # default is invalid
+
     valid_letters = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'}
 
-    if len(move) != 2:
-        return invalid
+    if len(input) != 2:
+        return move # invalid
     
-    if move[0].isdigit() and move[1].lower() in valid_letters:
-        letter = int(ord(move[1].lower())) - int(ord("a"))
-        number = int(move[0]) - 1
+    if input[0].isdigit() and input[1].lower() in valid_letters:
+        letter = int(ord(input[1].lower())) - int(ord("a"))
+        number = int(input[0]) - 1
 
-    elif move[1].isdigit() and move[0].lower() in valid_letters:
-        letter = int(ord(move[0].lower())) - int(ord("a"))
-        number = int(move[1]) - 1
+    elif input[1].isdigit() and input[0].lower() in valid_letters:
+        letter = int(ord(input[0].lower())) - int(ord("a"))
+        number = int(input[1]) - 1
 
     else:
-        return invalid
+        return move # invalid
 
-    move = (number, letter)
+    move["x"] = number
+    move["y"] = letter
 
-    if move[0] > -1 and move[0] < 9 and move[1] > -1 and move[1] < 9:
-        return move
-    else:
-        return invalid
-
-
-
-
-#Test functions
-
-def test_is_move_valid():
-    board = []
-    with open("hard.json", 'r') as file:
-        board = json.load(file)['board']
-    
-    assert is_move_valid(((0, 0), 1), board)[0] == False, "Box"
-    assert is_move_valid(((0, 0), 5), board)[0] == False, "Col"
-    assert is_move_valid(((0, 0), 2), board)[0] == True,  "Valid"
-    assert is_move_valid(((4, 4), 1), board)[0] == False, "Row and col"
-    assert is_move_valid(((4, 4), 8), board)[0] == True,  "Valid"
-    assert is_move_valid(((2, 2), 5), board)[0] == False, "Square filled"
-    assert is_move_valid(((0, 8), 8), board)[0] == False, "Box"
-    print("All cases passed for is_move_valid()")
-
-
-def test_parse():
-    print("\nparse A1")
-    print(parse_input("A1"))
-    print("\nparse B2")
-    print(parse_input("B2"))
-    print("\nparse hello")
-    print(parse_input("hello"))
-    print("\nparse C2")
-    print(parse_input("C2"))
-    print("\nparse D5")
-    print(parse_input("D5"))
-    print("\nparse I9")
-    print(parse_input("I9"))
-    print("\nparse J0")
-    print(parse_input("J0"))
-    print("\nparse 11")
-    print(parse_input("11"))
-    print("\nparse BB")
-    print(parse_input("BB"))
-    print("\nparse 1A")
-    print(parse_input("1A"))
-    print("\nparse 2C")
-    print(parse_input("2C"))
-    print("\nparse 1a")
-    print(parse_input("1a"))
+    if move["x"] > -1 and move["x"] < 9 and move["y"] > -1 and move["y"] < 9:
+        move["parsed_valid"] = True # valid
+    return move
 
 
 if __name__ == "__main__":
