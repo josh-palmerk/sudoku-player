@@ -87,7 +87,9 @@ def play_game(board: list) -> list:
         move = prompt_move(board)
         if move["command"] == "quit": # Quit code
             keep_playing = False
-        #elif move["command"] == "auto_solve": # coming soon
+        elif move["command"] == "auto_solve": 
+            solved = solve_board(board, (0, 0), 1)
+            print_board(solved[1])
         else:
             board = update_board(move, board)
     
@@ -104,7 +106,9 @@ def prompt_move(board: list) -> dict:
         square = input("Choose a space:\n> ")
         if square == "q":
             move["command"] = "quit" #Quit code
-        
+        if square == "auto_solve":
+            move["command"] = "auto_solve" #Quit code
+            return move
         parsed = parse_input(square)
         
         # Checks if input can be translated to a move. Is_move_valid() verifies legality of move.
@@ -274,6 +278,83 @@ def parse_input(input: str) -> dict:
     if move["x"] > -1 and move["x"] < 9 and move["y"] > -1 and move["y"] < 9:
         move["parsed_valid"] = True # valid
     return move
+
+
+
+# Autosolver
+
+def solve_board(curr_board, curr_space, num) -> tuple:
+
+    if not is_move_valid(curr_space, num)[0]:
+        return (False, curr_board)
+    else: #redundant else
+        # Update The Board!! (new_board)
+        this_move = {"x": curr_space[0], "y": curr_space[1], "number": num}
+        new_board = update_board(curr_board, this_move)
+        next_space = get_next_empty_space(new_board, curr_space[0], curr_space[1])
+        if next_space == None:
+            return (True, new_board)
+    
+    # now below code executes only if move was valid but board is not done
+    # Get the next empty space and save it in a var (next_space)
+    
+    # buncha if statements, one after another, like so:
+    result = solve_board(new_board, next_space, 1)
+    if result[0]:
+        return result
+    result = solve_board(new_board, next_space, 2)
+    if result[0]:
+        return result    
+    result = solve_board(new_board, next_space, 3)
+    if result[0]:
+        return result    
+    result = solve_board(new_board, next_space, 4)
+    if result[0]:
+        return result    
+    result = solve_board(new_board, next_space, 5)
+    if result[0]:
+        return result    
+    result = solve_board(new_board, next_space, 6)
+    if result[0]:
+        return result    
+    result = solve_board(new_board, next_space, 7)
+    if result[0]:
+        return result
+    result = solve_board(new_board, next_space, 8)
+    if result[0]:
+        return result
+    result = solve_board(new_board, next_space, 9)
+    if result[0]:
+        return result
+    #if all fail return false
+    return False
+
+def get_next_coordinate(x, y):
+    # Check if we're at the last column (8)
+    if y < 8:
+        return (x, y + 1)  # Move right
+    # If we're at the last column, move to the next row
+    elif x < 8:
+        return (x + 1, 0)  # Move down to the next row, first column
+    else:
+        return None  # We're at the bottom-right corner (8, 8), no next coordinate
+
+
+def get_next_empty_space(board, start_x, start_y):
+    # Start at the given position and search for the next empty space
+    i, j = start_x, start_y
+    while True:
+        if check_square(board, i, j):  # Check if current space is empty
+            return (i, j)  # Return the coordinates of the empty space
+        
+        # Get the next coordinate to check
+        next_coord = get_next_coordinate(i, j)
+        
+        if next_coord is None:  # If we've reached the end of the grid
+            return None  # No empty space found
+        
+        # Update i, j to the next coordinates
+        i, j = next_coord
 
 
 if __name__ == "__main__":
