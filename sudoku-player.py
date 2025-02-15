@@ -181,7 +181,7 @@ def is_move_valid(move: dict, board: list) -> tuple:
     
     # Step 2: If number is 0, alow user to "clear" the space.
     if num == 0:
-        return (True, "Clearing space.")
+        return (False, "Unable to clear spaces in this version.")
  
     #  Step 3: Check if the number is valid in the square the user is trying to edit 
     if not check_square(row, col, board): 
