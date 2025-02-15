@@ -1,19 +1,12 @@
-
-
-# TODO list:
-#       - remove excessive comments; add necessary ones
-#       - add autosolve code
-#       - add winchecking
-#       - add relevant docstrings
-#       - should 0 be valid?
-
-
-
 import json
 
+
 def main():
+    # Tests
     test_parse()
     test_is_move_valid()
+    
+    # Play Game
     board = get_board_from_file()
     new_board = play_game(board)
     quit_game(new_board)
@@ -79,14 +72,23 @@ def save_board_to_file(filename: str, board: list) -> None:
 # Game Management
 
 def play_game(board: list) -> list:
+    """Handles main game loop.
 
+    Args:
+        board (list): sudoku board as 2d array
+
+    Returns:
+        list: new board
+    """
     keep_playing = True
     while keep_playing:
         print_board(board)
         move = prompt_move(board)
+
         if move["command"] == "quit": # Quit code
             keep_playing = False
-        elif move["command"] == "auto_solve": 
+
+        elif move["command"] == "auto_solve": # Autosolve code
             solved = solve_board(board, (0, 0), 1)
             if solved == False:
                 print("Failed to autosolve.")
@@ -94,6 +96,7 @@ def play_game(board: list) -> list:
                 print_board(solved[1])
                 print("Solved Board Successfully!")
                 keep_playing = False
+
         else:
             board = update_board(move, board)
     
@@ -101,7 +104,14 @@ def play_game(board: list) -> list:
 
 
 def prompt_move(board: list) -> dict:
+    """Gets all the details of a move from the user. Fully validates input.
 
+    Args:
+        board (list): sudoku board as 2d array
+
+    Returns:
+        dict: Move pseudo-object
+    """
     valid = False
     move = {"command": "play"}
     
@@ -111,14 +121,14 @@ def prompt_move(board: list) -> dict:
         if square == "q":
             move["command"] = "quit" #Quit code
         if square == "auto_solve":
-            move["command"] = "auto_solve" #Quit code
+            move["command"] = "auto_solve" # Autosolve code
             return move
         parsed = parse_input(square)
         
         # Checks if input can be translated to a move. Is_move_valid() verifies legality of move.
         if parsed["parsed_valid"]:
             num = input("What number in that space?\n> ")
-            if len(num) == 1 and num.isdigit() and int(num) >= 0: #TODO modularize this?
+            if len(num) == 1 and num.isdigit() and int(num) >= 0:
                 move["x"] = parsed["x"]
                 move["y"] = parsed["y"]
                 move["number"] = int(num)
@@ -178,12 +188,21 @@ def print_board(board: list) -> None:
 # Input Validation
 
 def is_move_valid(move: dict, board: list) -> tuple:
+    """Verifies if given number can be placed at given coordinates. Number and coords must already be valid.
+
+    Args:
+        move (dict): Validated move
+        board (list): Sudoku board as 2d array
+
+    Returns:
+        tuple: Validity (bool), Message/reason (str)
+    """
     #  Step 1: Parse the input to get row, col, num
     row = move["x"]
     col = move["y"]
     num = move["number"] 
     
-    # Step 2: If number is 0, alow user to "clear" the space.
+    # Step 2: If number is 0, allow user to "clear" the space.
     if num == 0:
         return (False, "Unable to clear spaces in this version.")
  
@@ -207,7 +226,8 @@ def is_move_valid(move: dict, board: list) -> tuple:
     return (True, "Move is valid. Good job!") 
 
 
-def check_square(row, col, board): 
+def check_square(row, col, board) -> bool: 
+    """ Checks if given square is filled. """
     #  Check if the cell is already occupied 
     if board[row][col] != 0: 
         return False  #  The space is occupied by another number 
@@ -216,7 +236,8 @@ def check_square(row, col, board):
     return True
  
  
-def check_row(row, num, board): 
+def check_row(row, num, board) -> bool: 
+    """ Checks if given row has a conflict with given number. """
     # Loop through all columns in the given row 
     for col in range(0, 9): 
         #  If the number already exists in the row, return False 
@@ -228,6 +249,7 @@ def check_row(row, num, board):
  
  
 def check_col(col, num, board): 
+    """ Checks if given column has a conflict with given number. """
     #  Loop through all rows in the given column 
     for row in range(0, 9): 
         #  If the number already exists in the column, return False 
@@ -239,6 +261,7 @@ def check_col(col, num, board):
 
 
 def check_box(row, col, num, board): 
+    """ Checks if given 3x3 box has a conflict with given number. """
     #  Calculate the top-left corner of the 3x3 sub-box 
     start_row = row - (row % 3)
     start_col = col - (col % 3) 
@@ -255,6 +278,14 @@ def check_box(row, col, num, board):
 
 
 def parse_input(input: str) -> dict:
+    """Turns user input into a valid space on the board.
+
+    Args:
+        input (str): 2-length space e.g. "E5"
+
+    Returns:
+        dict: Move pseudo-object
+    """
     move = {}
     move["parsed_valid"] = False # default is invalid
 
@@ -263,10 +294,12 @@ def parse_input(input: str) -> dict:
     if len(input) != 2:
         return move # invalid
     
+    # Forwards (A1)
     if input[0].isdigit() and input[1].lower() in valid_letters:
         letter = int(ord(input[1].lower())) - int(ord("a"))
         number = int(input[0]) - 1
 
+    # Backwards (1A)
     elif input[1].isdigit() and input[0].lower() in valid_letters:
         letter = int(ord(input[0].lower())) - int(ord("a"))
         number = int(input[1]) - 1
@@ -277,15 +310,27 @@ def parse_input(input: str) -> dict:
     move["x"] = number
     move["y"] = letter
 
+    # Is move within board boundaries
     if move["x"] > -1 and move["x"] < 9 and move["y"] > -1 and move["y"] < 9:
         move["parsed_valid"] = True # valid
-    return move
+
+    return move # invalid
 
 
 
-# Autosolver
+# Autosolver (currently nonfunctional)
 
-def solve_board(curr_board: list, curr_space, num) -> tuple:
+def solve_board(curr_board: list, curr_space: tuple, num: int) -> tuple:
+    """Recusive algorithm to brute-force solve a sudoku board.
+
+    Args:
+        curr_board (list): Sudoku board as 2d array
+        curr_space (tuple): space to try
+        num (int): number to try
+
+    Returns:
+        tuple: _description_
+    """
     curr_move = {"x": curr_space[0], "y": curr_space[1], "number": num}
     if not is_move_valid(curr_move, curr_board)[0]:
         return (False, curr_board)
@@ -299,6 +344,7 @@ def solve_board(curr_board: list, curr_space, num) -> tuple:
     
     # now below code executes only if move was valid but board is not done
 
+    # Can I reasonably turn this into a loop? Or does it mess with path exploration
     result = solve_board(new_board, next_space, 1)
     if result[0]:
         return result
@@ -330,6 +376,7 @@ def solve_board(curr_board: list, curr_space, num) -> tuple:
     return (False, curr_board)
 
 def get_next_coordinate(x, y):
+    """Gets next coordinate on board after given one."""
     # Check if we're at the last column (8)
     if y < 8:
         return (x, y + 1)  # Move right
@@ -341,6 +388,8 @@ def get_next_coordinate(x, y):
 
 
 def get_next_empty_space(board, start_x, start_y):
+    """Gets next empty space on board after given one."""
+
     # Start at the given position and search for the next empty space
     i, j = start_x, start_y
     while True:
@@ -358,6 +407,7 @@ def get_next_empty_space(board, start_x, start_y):
 
 
 def test_parse():
+    """ Tests the parse_input function. """
     A1 = parse_input("A1")
     assert A1["x"] == 0 and A1["y"] == 0, "end case"
 
@@ -396,6 +446,8 @@ def test_parse():
 
 
 def test_is_move_valid():
+    """ Tests the is_move_valid function. """
+
     board = []
     with open("hard.json", 'r') as file:
         board = json.load(file)['board']
