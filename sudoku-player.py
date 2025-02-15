@@ -1,7 +1,6 @@
 
 
 # TODO list:
-#       - simplify is_move_valid output (dict)?
 #       - remove excessive comments; add necessary ones
 #       - add autosolve code
 #       - add winchecking
@@ -13,8 +12,8 @@
 import json
 
 def main():
-    #test_parse()
-    # test_is_move_valid()
+    test_parse()
+    test_is_move_valid()
     board = get_board_from_file()
     new_board = play_game(board)
     quit_game(new_board)
@@ -89,7 +88,12 @@ def play_game(board: list) -> list:
             keep_playing = False
         elif move["command"] == "auto_solve": 
             solved = solve_board(board, (0, 0), 1)
-            print_board(solved[1])
+            if solved == False:
+                print("Failed to autosolve.")
+            else:
+                print_board(solved[1])
+                print("Solved Board Successfully!")
+                keep_playing = False
         else:
             board = update_board(move, board)
     
@@ -237,9 +241,7 @@ def check_col(col, num, board):
 def check_box(row, col, num, board): 
     #  Calculate the top-left corner of the 3x3 sub-box 
     start_row = row - (row % 3)
-    print(start_row)
     start_col = col - (col % 3) 
-    print(start_col)
 
     #  Loop through the 3x3 sub-box 
     for i in range(start_row , start_row + 3): 
@@ -283,22 +285,20 @@ def parse_input(input: str) -> dict:
 
 # Autosolver
 
-def solve_board(curr_board, curr_space, num) -> tuple:
-
-    if not is_move_valid(curr_space, num)[0]:
+def solve_board(curr_board: list, curr_space, num) -> tuple:
+    curr_move = {"x": curr_space[0], "y": curr_space[1], "number": num}
+    if not is_move_valid(curr_move, curr_board)[0]:
         return (False, curr_board)
     else: #redundant else
         # Update The Board!! (new_board)
-        this_move = {"x": curr_space[0], "y": curr_space[1], "number": num}
-        new_board = update_board(curr_board, this_move)
+        
+        new_board = update_board(curr_move, curr_board)
         next_space = get_next_empty_space(new_board, curr_space[0], curr_space[1])
         if next_space == None:
             return (True, new_board)
     
     # now below code executes only if move was valid but board is not done
-    # Get the next empty space and save it in a var (next_space)
-    
-    # buncha if statements, one after another, like so:
+
     result = solve_board(new_board, next_space, 1)
     if result[0]:
         return result
@@ -326,8 +326,8 @@ def solve_board(curr_board, curr_space, num) -> tuple:
     result = solve_board(new_board, next_space, 9)
     if result[0]:
         return result
-    #if all fail return false
-    return False
+    #if all fail return false with old board (undo move)
+    return (False, curr_board)
 
 def get_next_coordinate(x, y):
     # Check if we're at the last column (8)
@@ -355,6 +355,59 @@ def get_next_empty_space(board, start_x, start_y):
         
         # Update i, j to the next coordinates
         i, j = next_coord
+
+
+def test_parse():
+    A1 = parse_input("A1")
+    assert A1["x"] == 0 and A1["y"] == 0, "end case"
+
+    a1 = parse_input("a1")
+    assert a1["x"] == 0 and a1["y"] == 0, "lowercase"
+    
+    one_a = parse_input("1a")
+    assert one_a["x"] == 0 and one_a["y"] == 0, "backwards"
+    
+    assert A1 == a1 and a1 == one_a, "Equivalence of A1, a1, 1a"
+    
+    E5 = parse_input("E5")
+    assert E5["x"] == 4 and E5["y"] == 4, "Middle Case"
+    
+    I9 = parse_input("I9")
+    assert I9["x"] == 8 and I9["y"] == 8, "End Case"
+
+    B6 = parse_input("B6")
+    assert B6["x"] == 5, "x is number and y is letter"
+    assert B6["y"] == 1, "x is number and y is letter"
+
+    valid_list = [A1, a1, one_a, E5, I9, B6]
+    for item in valid_list:
+        assert item["parsed_valid"] == True, "Validity message"
+
+    hello_world = parse_input("hello world")
+    assert hello_world["parsed_valid"] == False, "len(input) > 2"
+    
+    A0 = parse_input("A0")
+    assert A0["parsed_valid"] == False, "Invalid square (number)"
+
+    J1 = parse_input("J1")
+    assert J1["parsed_valid"] == False, "Invalid square (letter)"
+    
+    print("All tests passed for parse_input()")
+
+
+def test_is_move_valid():
+    board = []
+    with open("hard.json", 'r') as file:
+        board = json.load(file)['board']
+    
+    assert is_move_valid({"x": 0, "y": 0, "number": 1}, board)[0] == False, "Box"
+    assert is_move_valid({"x": 0, "y": 0, "number": 5}, board)[0] == False, "Col"
+    assert is_move_valid({"x": 0, "y": 0, "number": 2}, board)[0] == True, "Valid"
+    assert is_move_valid({"x": 4, "y": 4, "number": 1}, board)[0] == False, "Row and col"
+    assert is_move_valid({"x": 4, "y": 4, "number": 8}, board)[0] == True, "Valid"
+    assert is_move_valid({"x": 2, "y": 2, "number": 5}, board)[0] == False, "Square filled"
+    assert is_move_valid({"x": 0, "y": 8, "number": 8}, board)[0] == False, "Box"
+    print("All tests passed for is_move_valid()")
 
 
 if __name__ == "__main__":
